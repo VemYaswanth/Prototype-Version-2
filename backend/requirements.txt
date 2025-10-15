@@ -6,3 +6,10 @@ psycopg2-binary==2.9.9
 werkzeug==3.0.3
 pycryptodome==3.20.0
 gunicorn==21.2.0
+cryptography==43.0.1
+requests==2.32.3
+scikit-learn==1.5.2
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+flask-migrate==4.0.4

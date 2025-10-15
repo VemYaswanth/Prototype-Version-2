@@ -1,7 +1,12 @@
-import { useMemo } from "react";
-
-export default function AlertFrequencyChart({ data }){
-  // Replace with recharts later; simple placeholder
-  const count = useMemo(() => data.length, [data]);
-  return <div className="border rounded p-4">Alert Count (placeholder): {count}</div>;
+export default function AlertFrequencyChart({ data }) {
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h2 className="text-lg font-semibold text-blue-600 mb-2">
+        Alert Frequency
+      </h2>
+      <p className="text-sm text-gray-500">
+        {data.length} alerts detected this session.
+      </p>
+    </div>
+  );
 }
