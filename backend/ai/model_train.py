@@ -1,7 +1,9 @@
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-import joblib, os
-from backend.ai.preprocess import fit_vectorizer, clean_sql
+import joblib
+from ai.preprocess import fit_vectorizer, clean_sql
 
 MODEL_PATH = os.getenv("MODEL_PATH", "backend/ai/isolation_forest.pkl")
 

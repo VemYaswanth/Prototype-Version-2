@@ -1,5 +1,19 @@
-import joblib, os
 import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+import joblib,
+from ai.model_train import train_model
+def ensure_model():
+    if not os.path.exists(MODEL_PATH):
+        print("⚠️ Model missing, training new one...")
+        # Simple fallback training data
+        sample_logs = [
+            "SELECT * FROM users;",
+            "INSERT INTO orders (id, amount) VALUES (1,100);",
+            "UPDATE employees SET salary=5000 WHERE id=2;",
+            "DELETE FROM products WHERE id=3;"
+        ]
+        train_model(sample_logs)
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from ai.preprocess import transform_queries
