@@ -2,10 +2,10 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-import joblib
+import joblib, os
 from ai.preprocess import fit_vectorizer, clean_sql
 
-MODEL_PATH = os.getenv("MODEL_PATH", "backend/ai/isolation_forest.pkl")
+MODEL_PATH = os.getenv("MODEL_PATH", "ai/isolation_forest.pkl")
 
 def train_model(logs):
     clean_logs = [clean_sql(q) for q in logs]
