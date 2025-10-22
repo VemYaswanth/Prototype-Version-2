@@ -26,5 +26,6 @@ def create_app():
     app.register_blueprint(log_bp, url_prefix="/logs")
     app.register_blueprint(blockchain_bp, url_prefix="/blockchain")
     app.register_blueprint(ai_bp, url_prefix="/ai")
-
+    app.url_map.strict_slashes = False
     return app
+

@@ -32,13 +32,16 @@ class Anomaly(db.Model):
     flagged_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Alert(db.Model):
-    __tablename__ = "alerts"
+    __tablename__ = 'alerts'
+
     alert_id = db.Column(db.Integer, primary_key=True)
-    anomaly_id = db.Column(db.Integer, db.ForeignKey("anomalies.anomaly_id"))
+    anomaly_id = db.Column(db.Integer, db.ForeignKey('anomalies.anomaly_id'))
     alert_type = db.Column(db.String(100))
+    message = db.Column(db.Text)
     confidence = db.Column(db.Float)
-    status = db.Column(db.String(20), default="Open")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='Open')
+    level = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     resolved_at = db.Column(db.DateTime)
 
 class BlockchainLog(db.Model):
