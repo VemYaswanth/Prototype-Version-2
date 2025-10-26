@@ -33,16 +33,15 @@ class Anomaly(db.Model):
 
 class Alert(db.Model):
     __tablename__ = 'alerts'
-
     alert_id = db.Column(db.Integer, primary_key=True)
-    anomaly_id = db.Column(db.Integer, db.ForeignKey('anomalies.anomaly_id'))
     alert_type = db.Column(db.String(100))
+    confidence = db.Column(db.Numeric(4, 2))        
     message = db.Column(db.Text)
-    confidence = db.Column(db.Float)
+    level = db.Column(db.String(20))
     status = db.Column(db.String(20), default='Open')
-    level = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    resolved_at = db.Column(db.DateTime)
+
+
 
 class BlockchainLog(db.Model):
     __tablename__ = "blockchain_logs"

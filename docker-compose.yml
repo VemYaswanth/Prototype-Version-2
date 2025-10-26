@@ -1,1 +1,111 @@
-services:  db:    image: postgres:14    container_name: postgres_db    restart: always    environment:      POSTGRES_USER: postgres      POSTGRES_PASSWORD: postgres      POSTGRES_DB: securitydb    ports:      - "5432:5432"    volumes:      - pgdata:/var/lib/postgresql/data    healthcheck:      test: ["CMD-SHELL", "pg_isready -U postgres -d securitydb"]      interval: 5s      timeout: 3s      retries: 5    networks:      - app_network  backend:    build: ./backend    container_name: flask_api    restart: always    depends_on:      db:        condition: service_healthy    environment:      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb      FLASK_ENV: production      JWT_SECRET_KEY: devsecret      SECRET_KEY: devsecret    ports:      - "8000:8000"    command: sh -c "sleep 5 && python init_db.py && gunicorn 'app:create_app()' -c gunicorn.conf.py"    networks:      - app_network  frontend:    build: ./frontend    container_name: react_ui    restart: always    depends_on:      - backend    ports:      - "3000:3000"    environment:      REACT_APP_API_URL: http://localhost:8000    networks:      - app_network  blockchain:    image: alpine    container_name: blockchain_node    command: ["sh", "-c", "echo 'Blockchain placeholder running'; sleep infinity"]    networks:      - app_network  blockchain_analyzer:    build: ./blockchain_analyzer    container_name: blockchain_analyzer    restart: always    depends_on:      - db    environment:      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb    networks:      - app_network  pgadmin:    image: dpage/pgadmin4    container_name: pgadmin    restart: always    environment:      PGADMIN_DEFAULT_EMAIL: admin@local.com      PGADMIN_DEFAULT_PASSWORD: admin123    ports:      - "5050:80"    depends_on:      - db    networks:      - app_networkvolumes:  pgdata:networks:  app_network:    driver: bridge
+services:
+  db:
+    image: postgres:14
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: securitydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d securitydb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app_network
+
+  backend:
+    build: ./backend
+    container_name: flask_api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb
+      FLASK_ENV: production
+      JWT_SECRET_KEY: devsecret
+      SECRET_KEY: devsecret
+    ports:
+      - "8000:8000"
+    command: sh -c "sleep 5 && python init_db.py && gunicorn 'app:create_app()' -c gunicorn.conf.py"
+    networks:
+      - app_network
+
+  frontend:
+    build: ./frontend
+    container_name: react_ui
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+    networks:
+      - app_network
+
+  blockchain:
+    image: alpine
+    container_name: blockchain_node
+    command: ["sh", "-c", "echo 'Blockchain placeholder running'; sleep infinity"]
+    networks:
+      - app_network
+
+  blockchain_analyzer:
+    build: ./blockchain_analyzer
+    container_name: blockchain_analyzer
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb
+    networks:
+      - app_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - app_network
+  db_backup:
+    image: postgres:14
+    container_name: db_backup
+    restart: always
+    depends_on:
+      - db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: securitydb
+    volumes:
+      - ./db_backups:/backups
+    entrypoint: >
+      bash -c "while true; do
+        pg_dump -U postgres -d securitydb > /backups/securitydb_$(date +%F_%H-%M-%S).sql &&
+        echo '✅ Backup completed at $(date)';
+        sleep 86400;
+      done"
+    networks:
+      - app_network
+
+
+volumes:
+  pgdata:
+
+networks:
+  app_network:
+    driver: bridge

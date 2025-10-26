@@ -16,7 +16,7 @@ def list_logs():
             "user_id": l.user_id,
             "query": l.query_text,
             "operation": l.operation_type,
-            "time": l.executed_at.isoformat(),
+            "time": l.executed_at.isoformat() if l.executed_at else None,
             "hash": l.blockchain_hash,
         } for l in logs
     ])
@@ -40,11 +40,14 @@ def add_log():
 
 @log_bp.route("/alerts", methods=["GET"])
 def list_alerts():
-    alerts = Alert.query.order_by(Alert.created_at.desc()).limit(100).all()
+    from app.models import Alert
+    import random
 
+    alerts = Alert.query.order_by(Alert.created_at.desc()).limit(100).all()
     data = []
+
     for a in alerts:
-        confidence = a.confidence or round(random.uniform(0.8, 0.99), 2)
+        confidence = float(a.confidence) if a.confidence is not None else round(random.uniform(0.8, 0.99), 2)
         level = a.level or ("High" if confidence > 0.9 else "Medium" if confidence > 0.75 else "Info")
         data.append({
             "id": a.alert_id,
@@ -52,8 +55,10 @@ def list_alerts():
             "confidence": confidence,
             "level": level,
             "status": a.status or "Open",
-            "created_at": a.created_at.isoformat() if a.created_at else None
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+            "message": a.message or ""
         })
 
-    return jsonify(data)
+    return jsonify(data), 200
+
 
