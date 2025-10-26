@@ -4,7 +4,7 @@
 **University:** Monroe University, King Graduate School  
 **Course:** CS700 – Special Projects in Computer Science I  
 **Instructor:** Dr. Noordeen Kateregga  
-**Date:** August 2025  
+**Date:** October 2025  
 
 ---
 
