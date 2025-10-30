@@ -47,17 +47,20 @@ def list_alerts():
     data = []
 
     for a in alerts:
-        confidence = float(a.confidence) if a.confidence is not None else round(random.uniform(0.8, 0.99), 2)
-        level = a.level or ("High" if confidence > 0.9 else "Medium" if confidence > 0.75 else "Info")
-        data.append({
-            "id": a.alert_id,
-            "type": a.alert_type or "Unclassified",
-            "confidence": confidence,
-            "level": level,
-            "status": a.status or "Open",
-            "created_at": a.created_at.isoformat() if a.created_at else None,
-            "message": a.message or ""
-        })
+     confidence = float(a.confidence or 0)
+     # derive level dynamically since the column no longer exists
+     level = "High" if confidence > 0.9 else "Medium" if confidence > 0.75 else "Info"
+
+     results.append({
+        "alert_id": a.alert_id,
+        "anomaly_id": a.anomaly_id,
+        "alert_type": a.alert_type,
+        "confidence": confidence,
+        "level": level,
+        "status": a.status,
+        "created_at": a.created_at.isoformat() if a.created_at else None
+    })
+
 
     return jsonify(data), 200
 

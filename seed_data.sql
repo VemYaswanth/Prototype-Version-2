@@ -1,26 +1,26 @@
--- ------------------------------
--- USERS
--- ------------------------------
-INSERT INTO users (email, password_hash, role) VALUES
-('admin@ssems.net', 'hash_admin', 'admin'),
-('analyst@ssems.net', 'hash_analyst', 'analyst'),
-('auditor@ssems.net', 'hash_auditor', 'auditor'),
-('developer@ssems.net', 'hash_dev', 'developer'),
-('tester@ssems.net', 'hash_tester', 'tester'),
-('security@ssems.net', 'hash_security', 'security'),
-('intern@ssems.net', 'hash_intern', 'intern'),
-('lead@ssems.net', 'hash_lead', 'lead'),
-('manager@ssems.net', 'hash_manager', 'manager'),
-('qa@ssems.net', 'hash_qa', 'qa');
+-- Ensure users exist (1–10)
+INSERT INTO users (email, password_hash, role)
+VALUES
+('admin@ssems.net', 'hash', 'admin'),
+('analyst@ssems.net', 'hash', 'analyst'),
+('auditor@ssems.net', 'hash', 'auditor'),
+('developer@ssems.net', 'hash', 'developer'),
+('tester@ssems.net', 'hash', 'tester'),
+('security@ssems.net', 'hash', 'security'),
+('intern@ssems.net', 'hash', 'viewer'),
+('lead@ssems.net', 'hash', 'viewer'),
+('manager@ssems.net', 'hash', 'admin'),
+('qa@ssems.net', 'hash', 'viewer')
+ON CONFLICT (email) DO NOTHING;
 
 -- ------------------------------
--- CLEAN LOGS (700)
+-- NORMAL LOGS (300)
 -- ------------------------------
 DO $$
 DECLARE 
     i INT := 1;
 BEGIN
-    WHILE i <= 700 LOOP
+    WHILE i <= 300 LOOP
         INSERT INTO query_logs (user_id, query_text, operation_type, client_ip)
         VALUES (
             (1 + floor(random() * 10))::INT,
@@ -46,7 +46,8 @@ DECLARE
     act TEXT;
 BEGIN
     WHILE i <= 300 LOOP
-        op := (ARRAY['DROP','DELETE','GRANT','ALTER','UPDATE'])[1 + floor(random()*5)];
+        -- Force into allowed op types to satisfy constraint
+        op := (ARRAY['UPDATE','DELETE'])[1 + floor(random()*2)];
         act := (ARRAY[
             'DROP TABLE users;',
             'DELETE FROM orders WHERE 1=1;',
@@ -54,6 +55,7 @@ BEGIN
             'ALTER TABLE payments DISABLE TRIGGER ALL;',
             'UPDATE users SET role=''admin'' WHERE id = 5;'
         ])[1 + floor(random()*5)];
+
         INSERT INTO query_logs (user_id, query_text, operation_type, client_ip)
         VALUES (
             (1 + floor(random() * 10))::INT,
