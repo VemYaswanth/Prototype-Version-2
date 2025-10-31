@@ -40,28 +40,31 @@ def add_log():
 
 @log_bp.route("/alerts", methods=["GET"])
 def list_alerts():
-    from app.models import Alert
-    import random
-
     alerts = Alert.query.order_by(Alert.created_at.desc()).limit(100).all()
-    data = []
+    results = []
+    if not alerts:
+        return jsonify([]), 200
 
     for a in alerts:
-     confidence = float(a.confidence or 0)
-     # derive level dynamically since the column no longer exists
-     level = "High" if confidence > 0.9 else "Medium" if confidence > 0.75 else "Info"
+        confidence = float(a.confidence or 0)
+        # derive level dynamically since the column no longer exists
+        level = (
+            "High" if confidence > 0.9
+            else "Medium" if confidence > 0.75
+            else "Info"
+        )
 
-     results.append({
-        "alert_id": a.alert_id,
-        "anomaly_id": a.anomaly_id,
-        "alert_type": a.alert_type,
-        "confidence": confidence,
-        "level": level,
-        "status": a.status,
-        "created_at": a.created_at.isoformat() if a.created_at else None
-    })
+        results.append({
+            "alert_id": a.alert_id,
+            "anomaly_id": a.anomaly_id,
+            "alert_type": a.alert_type,
+            "confidence": confidence,
+            "level": level,
+            "status": a.status,
+            "created_at": a.created_at.isoformat() if a.created_at else None
+        })
 
+    return jsonify(results), 200
 
-    return jsonify(data), 200
 
 

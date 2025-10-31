@@ -5,7 +5,7 @@ class Alert(db.Model):
     __tablename__ = 'alerts'
 
     alert_id = db.Column(db.Integer, primary_key=True)
-    anomaly_id = db.Column(db.Integer, db.ForeignKey('anomalies.anomaly_id'))
+    anomaly_id = db.Column(db.Integer, db.ForeignKey('anomalies.id'))
     alert_type = db.Column(db.String(100))
     confidence = db.Column(db.Float)
     status = db.Column(db.String(20))

@@ -10,11 +10,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /root/postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d securitydb"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
     networks:
       - app_network
@@ -53,13 +53,23 @@ services:
   blockchain:
     image: alpine
     container_name: blockchain_node
-    command: ["sh", "-c", "echo 'Blockchain placeholder running'; sleep infinity"]
+    command: ["sh", "-c", "echo 'Blockchain node running...'; sleep infinity"]
     networks:
       - app_network
 
   blockchain_analyzer:
     build: ./blockchain_analyzer
     container_name: blockchain_analyzer
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb
+    networks:
+      - app_network
+  auto_data_generator:
+    build: ./auto_data_generator
+    container_name: auto_data_generator
     restart: always
     depends_on:
       - db
@@ -81,30 +91,26 @@ services:
       - db
     networks:
       - app_network
+
   db_backup:
     image: postgres:14
     container_name: db_backup
     restart: always
     depends_on:
       - db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: securitydb
     volumes:
-      - ./db_backups:/backups
+      - /root/db_backups:/backups
+      - /root/postgres_data:/var/lib/postgresql/data
     entrypoint: >
-      bash -c "while true; do
-        pg_dump -U postgres -d securitydb > /backups/securitydb_$(date +%F_%H-%M-%S).sql &&
+      /bin/bash -c "while true; do
+        pg_dump -U postgres -d securitydb -f /backups/securitydb_$(date +%F_%H-%M).sql;
         echo '✅ Backup completed at $(date)';
         sleep 86400;
       done"
+    environment:
+      PGPASSWORD: postgres
     networks:
       - app_network
-
-
-volumes:
-  pgdata:
 
 networks:
   app_network:
