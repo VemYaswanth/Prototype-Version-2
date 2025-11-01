@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /root/postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d securitydb"]
       interval: 10s
@@ -67,6 +67,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/securitydb
     networks:
       - app_network
+
   auto_data_generator:
     build: ./auto_data_generator
     container_name: auto_data_generator
@@ -99,8 +100,8 @@ services:
     depends_on:
       - db
     volumes:
-      - /root/db_backups:/backups
-      - /root/postgres_data:/var/lib/postgresql/data
+      - db_backups:/backups
+      - postgres_data:/var/lib/postgresql/data
     entrypoint: >
       /bin/bash -c "while true; do
         pg_dump -U postgres -d securitydb -f /backups/securitydb_$(date +%F_%H-%M).sql;
@@ -115,3 +116,7 @@ services:
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  db_backups:

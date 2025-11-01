@@ -4,28 +4,15 @@ import time
 from datetime import datetime
 from sqlalchemy import create_engine, text
 
-# Get DB URL from environment variable or fallback
+# Database connection (environment variable or fallback)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg2://postgres:postgres@db:5432/securitydb"
 )
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
-# List of users for linking logs
-USERS = [
-    (1, 'admin@ssems.net'),
-    (2, 'analyst@ssems.net'),
-    (3, 'auditor@ssems.net'),
-    (4, 'developer@ssems.net'),
-    (5, 'tester@ssems.net'),
-    (6, 'security@ssems.net'),
-    (7, 'intern@ssems.net'),
-    (8, 'lead@ssems.net'),
-    (9, 'manager@ssems.net'),
-    (10, 'qa@ssems.net')
-]
-
+# Query templates
 CLEAN_QUERIES = [
     "SELECT * FROM products WHERE price < 100;",
     "INSERT INTO customers (name, email) VALUES ('Alice','alice@test.com');",
@@ -41,8 +28,50 @@ SUSPICIOUS_QUERIES = [
     "SELECT * FROM users WHERE password_hash IS NOT NULL;",
 ]
 
+
+def init_tables():
+    """Create essential tables if missing."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password_hash VARCHAR(255),
+            role VARCHAR(50),
+            mfa_enabled BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """))
+
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS query_logs (
+            log_id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+            query_text TEXT,
+            operation_type VARCHAR(50),
+            client_ip VARCHAR(50),
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """))
+
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS alerts (
+            alert_id SERIAL PRIMARY KEY,
+            anomaly_id INTEGER,
+            alert_type VARCHAR(100),
+            confidence NUMERIC(4,2),
+            message TEXT,
+            status VARCHAR(20) DEFAULT 'Open',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP
+        );
+        """))
+
+        print("✅ Verified or created tables successfully.")
+
+
 def ensure_users_exist():
-    """Ensure all required users exist in the DB."""
+    """Seed the users table if empty."""
     with engine.begin() as conn:
         result = conn.execute(text("SELECT COUNT(*) FROM users"))
         count = result.scalar()
@@ -66,7 +95,7 @@ def ensure_users_exist():
 
 
 def insert_query_log(query, operation_type, user_id, client_ip, suspicious=False):
-    """Insert a new query log and, if suspicious, create an alert."""
+    """Insert a query log and create alert if suspicious."""
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO query_logs (user_id, query_text, operation_type, client_ip)
@@ -80,8 +109,8 @@ def insert_query_log(query, operation_type, user_id, client_ip, suspicious=False
 
         if suspicious:
             conn.execute(text("""
-                INSERT INTO alerts (alert_type, confidence, message, status, created_at)
-                VALUES (:alert_type, :confidence, :message, 'Open', NOW())
+                INSERT INTO alerts (alert_type, confidence, message, status)
+                VALUES (:alert_type, :confidence, :message, 'Open')
             """), {
                 "alert_type": "Suspicious SQL Activity",
                 "confidence": round(random.uniform(0.8, 0.99), 2),
@@ -90,23 +119,28 @@ def insert_query_log(query, operation_type, user_id, client_ip, suspicious=False
 
 
 def run():
+    """Main loop for auto-generating data."""
+    init_tables()
     ensure_users_exist()
-    print("🚀 Auto Data Generator running...")
+    print("🚀 Auto Data Generator (self-recovering) running...")
 
     while True:
         query_type = random.choice(["clean", "suspicious"])
         query = random.choice(SUSPICIOUS_QUERIES if query_type == "suspicious" else CLEAN_QUERIES)
         op = query.split()[0].upper()
-        user_id = random.randint(1, len(USERS))
+        user_id = random.randint(1, 10)
         client_ip = f"192.168.1.{random.randint(2, 255)}"
 
         try:
             insert_query_log(query, op, user_id, client_ip, suspicious=(query_type == "suspicious"))
-            print(f"[{datetime.now().isoformat()}] ✅ Inserted {query_type} query log for user {user_id}")
+            print(f"[{datetime.now().isoformat()}] ✅ Inserted {query_type} query log (User {user_id})")
         except Exception as e:
             print(f"[{datetime.now().isoformat()}] ❌ Error inserting query log: {e}")
+            print("🩹 Attempting to reinitialize tables...")
+            init_tables()
+            ensure_users_exist()
 
-        time.sleep(random.uniform(2, 4))  # adjustable delay
+        time.sleep(random.uniform(3, 6))
 
 
 if __name__ == "__main__":
