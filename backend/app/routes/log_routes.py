@@ -3,9 +3,16 @@ from flask_jwt_extended import jwt_required
 from app.models import QueryLog, Alert
 from app import db
 import random
+from datetime import datetime
+
+# ✅ Import your real-time AI & hash module
+from app.services.realtime_ai_monitor import process_new_query
 
 log_bp = Blueprint("logs", __name__)
 
+# ===========================
+# FETCH LATEST LOGS
+# ===========================
 @log_bp.route("/", methods=["GET"])
 @jwt_required(optional=True)
 def list_logs():
@@ -21,6 +28,10 @@ def list_logs():
         } for l in logs
     ])
 
+
+# ===========================
+# ADD A NEW LOG (AI + HASH TRIGGER)
+# ===========================
 @log_bp.route("/add", methods=["POST"])
 @jwt_required(optional=True)
 def add_log():
@@ -33,11 +44,25 @@ def add_log():
     )
     db.session.add(log)
     db.session.commit()
-    return jsonify({"id": log.log_id}), 201
 
-# app/routes/log_routes.py
-# existing routes like list_logs() stay above...
+    # 🧠 Trigger AI anomaly detection + hash creation immediately
+    executed_at = datetime.utcnow()
+    try:
+        process_new_query(
+            log_id=log.log_id,
+            query_text=log.query_text,
+            operation_type=log.operation_type,
+            executed_at=executed_at
+        )
+    except Exception as e:
+        print(f"⚠️ AI/Hash trigger failed for log {log.log_id}: {e}")
 
+    return jsonify({"id": log.log_id, "status": "processed"}), 201
+
+
+# ===========================
+# FETCH ALERTS
+# ===========================
 @log_bp.route("/alerts", methods=["GET"])
 def list_alerts():
     alerts = Alert.query.order_by(Alert.created_at.desc()).limit(100).all()
@@ -47,7 +72,6 @@ def list_alerts():
 
     for a in alerts:
         confidence = float(a.confidence or 0)
-        # derive level dynamically since the column no longer exists
         level = (
             "High" if confidence > 0.9
             else "Medium" if confidence > 0.75
@@ -65,6 +89,3 @@ def list_alerts():
         })
 
     return jsonify(results), 200
-
-
-
