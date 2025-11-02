@@ -137,11 +137,11 @@ cd Prototype-Version-2
 ```
 2️⃣ Build and Run Docker Containers
 
-docker-compose up --build
+```docker-compose up --build```
 
 3️⃣ Verify Database Initialization
 
-docker exec -it postgres_db psql -U postgres -d securitydb -c "\dt"
+```docker exec -it postgres_db psql -U postgres -d securitydb -c "\dt"```
 
 4️⃣ Access the Frontend Dashboard
 
@@ -169,7 +169,7 @@ Refer to AI_Blockchain_Security_System_Checklist.txt for:
 ---
 
 🧱 Folder Structure
-
+```
 Prototype-Version-2/
 ├── backend/
 │   ├── app/
@@ -190,9 +190,9 @@ Prototype-Version-2/
 ├── AI_Blockchain_Security_System_Checklist.txt
 ├── Final_Project_Documentation_Yaswanth_Vemulapalli_Submit-08-02.pdf
 └── README.md
-
-
+```
 ---
+
 
 🔮 Future Enhancements
 
@@ -235,8 +235,8 @@ Risk Assessment & Future Recommendations
 👨‍💻 Author
 
 Yaswanth Vemulapalli
-🎓 Master of Science – Computer Science, Monroe University
-📧 yaswanthvemulapalli@gmail.com
+🎓 Master of Science – Computer Science, Monroe University, New York
+📧 contact@vyaswanth.me
 🌐 GitHub: VemYaswanth
 
 
@@ -245,8 +245,6 @@ Yaswanth Vemulapalli
 🪪 License
 
 This project is licensed under the MIT License – see the LICENSE file for details.
-
-
 ---
 
 > "Bridging AI intelligence with blockchain immutability to redefine data security."
