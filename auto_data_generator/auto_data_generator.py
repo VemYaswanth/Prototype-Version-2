@@ -118,30 +118,27 @@ def insert_query_log(query, operation_type, user_id, client_ip, suspicious=False
             })
 
 
+# auto_data_generator.py - Recommended Change in run() function
+
 def run():
-    """Main loop for auto-generating data."""
-    init_tables()
+    # ... (init_tables and ensure_users_exist remain outside the while loop)
+    init_tables() 
     ensure_users_exist()
-    print("🚀 Auto Data Generator (self-recovering) running...")
+    print("🚀 Auto Data Generator (stable) running...")
 
     while True:
-        query_type = random.choice(["clean", "suspicious"])
-        query = random.choice(SUSPICIOUS_QUERIES if query_type == "suspicious" else CLEAN_QUERIES)
-        op = query.split()[0].upper()
-        user_id = random.randint(1, 10)
-        client_ip = f"192.168.1.{random.randint(2, 255)}"
+        # ... (query generation logic)
 
         try:
             insert_query_log(query, op, user_id, client_ip, suspicious=(query_type == "suspicious"))
             print(f"[{datetime.now().isoformat()}] ✅ Inserted {query_type} query log (User {user_id})")
         except Exception as e:
             print(f"[{datetime.now().isoformat()}] ❌ Error inserting query log: {e}")
-            print("🩹 Attempting to reinitialize tables...")
-            init_tables()
-            ensure_users_exist()
-
+            print("⏳ Waiting to retry connection...")
+            # 👇 REMOVE init_tables() and ensure_users_exist() here
+            time.sleep(5) # Wait longer before retrying to give DB a chance to recover
+        
         time.sleep(random.uniform(3, 6))
-
 
 if __name__ == "__main__":
     run()
