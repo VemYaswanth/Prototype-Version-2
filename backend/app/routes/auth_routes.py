@@ -23,7 +23,9 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    print("LOGIN ROUTE CALLED")
     data = request.get_json()
+    print("LOGIN DEBUG:", data)
     user = User.query.filter_by(email=data.get("email")).first()
     if not user or not check_password_hash(user.password_hash, data.get("password")):
         return jsonify({"error": "Invalid credentials"}), 401

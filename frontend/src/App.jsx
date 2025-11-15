@@ -1,14 +1,46 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from "react";
+import { Routes, Route, Outlet } from "react-router-dom";
+
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Alerts from "./pages/Alerts";
+import Logs from "./pages/Logs";
+import SystemControl from "./pages/SystemControl";
+import NotFound from "./pages/NotFound";
 
-export default function App(){
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login/>} />
-        <Route path="/" element={<Dashboard/>} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Public route */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Protected layout */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <div className="min-h-screen flex flex-col">
+              <Navbar />
+              <div className="flex flex-1">
+                <Sidebar />
+                <main className="flex-1 bg-slate-100 p-4">
+                  <Outlet />  {/* THIS IS THE KEY FIX */}
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="alerts" element={<Alerts />} />
+        <Route path="logs" element={<Logs />} />
+        <Route path="system" element={<SystemControl />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
   );
 }
