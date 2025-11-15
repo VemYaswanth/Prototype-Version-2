@@ -1,0 +1,3 @@
+UPDATE users
+SET password_hash = 'scrypt:32768:8:1$zIbjmOqQAGKLLBfT$5565d3e3c2e50527dcad06b13d53935536bcc0b71a09e3a9b7c28177baa1d8d4e85d7167c1d0526485857d8d51b1d7c7fdd963db944438fad1098641d4b37385'
+WHERE email = 'admin@ssems.net';
