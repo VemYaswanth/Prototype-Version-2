@@ -7,6 +7,8 @@ COPY . /app
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install docker
+
 
 EXPOSE 8000
 

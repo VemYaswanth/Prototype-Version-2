@@ -9,7 +9,10 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
-import SystemControl from "./pages/SystemControl";
+
+// ✅ Correct import with full extension for Docker/Vite
+import DockerManagerTab from "./pages/DockerManagerTab.jsx";
+
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -28,7 +31,7 @@ export default function App() {
               <div className="flex flex-1">
                 <Sidebar />
                 <main className="flex-1 bg-slate-100 p-4">
-                  <Outlet />  {/* THIS IS THE KEY FIX */}
+                  <Outlet />
                 </main>
               </div>
             </div>
@@ -38,7 +41,10 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="logs" element={<Logs />} />
-        <Route path="system" element={<SystemControl />} />
+
+        {/* System Control = Docker Manager */}
+        <Route path="system" element={<DockerManagerTab />} />
+
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

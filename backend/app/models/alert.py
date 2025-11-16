@@ -5,12 +5,23 @@ class Alert(db.Model):
     __tablename__ = 'alerts'
 
     alert_id = db.Column(db.Integer, primary_key=True)
-    anomaly_id = db.Column(db.Integer, db.ForeignKey('anomalies.id'))
+
+    # FIXED foreign key → anomalies.anomaly_id
+    anomaly_id = db.Column(
+        db.Integer,
+        db.ForeignKey('anomalies.anomaly_id'),
+        nullable=True
+    )
+
     alert_type = db.Column(db.String(100))
     confidence = db.Column(db.Float)
-    status = db.Column(db.String(20))
-    created_at = db.Column(db.DateTime)
-    resolved_at = db.Column(db.DateTime)
+    status = db.Column(db.String(20), default="Open")
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+
+    # Relationship back to anomaly
+    anomaly = db.relationship("Anomaly", backref="alerts", lazy=True)
 
     def to_dict(self):
         return {

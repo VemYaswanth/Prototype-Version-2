@@ -13,3 +13,4 @@ pandas==2.2.2
 numpy==1.26.4
 joblib==1.4.2
 flask-migrate==4.0.4
+docker

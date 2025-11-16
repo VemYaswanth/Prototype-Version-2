@@ -4,12 +4,12 @@ from app import db
 class Anomaly(db.Model):
     __tablename__ = 'anomalies'
 
-    id = db.Column(db.Integer, primary_key=True)
-    detected_at = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.Text, nullable=False)
-    severity = db.Column(db.String(20), default="medium")
-    source = db.Column(db.String(100))
-    resolved = db.Column(db.Boolean, default=False)
+    anomaly_id = db.Column(db.Integer, primary_key=True)
+    log_id = db.Column(db.Integer, db.ForeignKey("query_logs.log_id"))
+    anomaly_score = db.Column(db.Float, nullable=False)
+    is_anomalous = db.Column(db.Boolean, nullable=False)
+    model_version = db.Column(db.String(50))
+    flagged_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f"<Anomaly {self.id} - {self.severity}>"
+        return f"<Anomaly {self.anomaly_id} anomalous={self.is_anomalous}>"

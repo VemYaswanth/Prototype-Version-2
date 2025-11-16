@@ -2,15 +2,11 @@ import os
 import random
 import time
 from datetime import datetime
-from sqlalchemy import create_engine, text
+import requests
 
-# Database connection (environment variable or fallback)
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:postgres@db:5432/securitydb"
-)
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Backend API base URL (inside Docker network)
+# Override with BACKEND_URL env if needed, e.g. http://flask_api:8000
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 
 # Query templates
 CLEAN_QUERIES = [
@@ -29,116 +25,104 @@ SUSPICIOUS_QUERIES = [
 ]
 
 
-def init_tables():
-    """Create essential tables if missing."""
-    with engine.begin() as conn:
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id SERIAL PRIMARY KEY,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            password_hash VARCHAR(255),
-            role VARCHAR(50),
-            mfa_enabled BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """))
-
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS query_logs (
-            log_id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-            query_text TEXT,
-            operation_type VARCHAR(50),
-            client_ip VARCHAR(50),
-            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """))
-
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS alerts (
-            alert_id SERIAL PRIMARY KEY,
-            anomaly_id INTEGER,
-            alert_type VARCHAR(100),
-            confidence NUMERIC(4,2),
-            message TEXT,
-            status VARCHAR(20) DEFAULT 'Open',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            resolved_at TIMESTAMP
-        );
-        """))
-
-        print("✅ Verified or created tables successfully.")
+def infer_operation_type(query: str) -> str:
+    """Infer SQL operation type from the query text."""
+    q_upper = query.strip().upper()
+    if q_upper.startswith("SELECT"):
+        return "SELECT"
+    if q_upper.startswith("INSERT"):
+        return "INSERT"
+    if q_upper.startswith("UPDATE"):
+        return "UPDATE"
+    if q_upper.startswith("DELETE"):
+        return "DELETE"
+    if q_upper.startswith("DROP"):
+        return "DROP"
+    if q_upper.startswith("ALTER"):
+        return "ALTER"
+    if q_upper.startswith("GRANT"):
+        return "GRANT"
+    return "UNKNOWN"
 
 
-def ensure_users_exist():
-    """Seed the users table if empty."""
-    with engine.begin() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM users"))
-        count = result.scalar()
-        if count == 0:
-            print("⚙️ Seeding users table...")
-            conn.execute(text("""
-                INSERT INTO users (email, password_hash, role, mfa_enabled)
-                VALUES
-                ('admin@ssems.net', 'admin123', 'admin', false),
-                ('analyst@ssems.net', 'analyst123', 'analyst', false),
-                ('auditor@ssems.net', 'auditor123', 'auditor', false),
-                ('developer@ssems.net', 'developer123', 'developer', false),
-                ('tester@ssems.net', 'tester123', 'tester', false),
-                ('security@ssems.net', 'security123', 'security', false),
-                ('intern@ssems.net', 'intern123', 'intern', false),
-                ('lead@ssems.net', 'lead123', 'lead', false),
-                ('manager@ssems.net', 'manager123', 'manager', false),
-                ('qa@ssems.net', 'qa123', 'qa', false);
-            """))
-            print("✅ Users seeded successfully.")
+def send_log_to_backend(query: str, operation_type: str, user_id: int, client_ip: str):
+    """
+    Send a single query log into the Flask backend.
 
+    This hits /logs/add, which will:
+      - insert into query_logs
+      - run the AI scoring engine (/ai/score)
+      - create anomalies / alerts
+      - update metrics for /metrics/summary and /alerts/suspicious
+    """
+    payload = {
+        "user_id": user_id,
+        "query_text": query,
+        "operation_type": operation_type,
+        "client_ip": client_ip,
+    }
 
-def insert_query_log(query, operation_type, user_id, client_ip, suspicious=False):
-    """Insert a query log and create alert if suspicious."""
-    with engine.begin() as conn:
-        conn.execute(text("""
-            INSERT INTO query_logs (user_id, query_text, operation_type, client_ip)
-            VALUES (:user_id, :query_text, :operation_type, :client_ip)
-        """), {
-            "user_id": user_id,
-            "query_text": query,
-            "operation_type": operation_type,
-            "client_ip": client_ip
-        })
+    try:
+        resp = requests.post(
+            f"{BACKEND_URL}/logs/add",
+            json=payload,
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            print(
+                f"[{datetime.now().isoformat()}] ❌ Backend rejected log "
+                f"(status {resp.status_code}): {resp.text}"
+            )
+        else:
+            print(
+                f"[{datetime.now().isoformat()}] ⚡ Sent log to backend "
+                f"(user={user_id}, op={operation_type})"
+            )
+    except Exception as e:
+        print(f"[{datetime.now().isoformat()}] ❌ Error sending log to backend: {e}")
 
-        if suspicious:
-            conn.execute(text("""
-                INSERT INTO alerts (alert_type, confidence, message, status)
-                VALUES (:alert_type, :confidence, :message, 'Open')
-            """), {
-                "alert_type": "Suspicious SQL Activity",
-                "confidence": round(random.uniform(0.8, 0.99), 2),
-                "message": query
-            })
-
-
-# auto_data_generator.py - Recommended Change in run() function
 
 def run():
-    # ... (init_tables and ensure_users_exist remain outside the while loop)
-    init_tables() 
-    ensure_users_exist()
-    print("🚀 Auto Data Generator (stable) running...")
+    """Main loop for generating synthetic query logs."""
+    print("🚀 Auto Data Generator running...")
+    print(f"🌐 Using backend URL: {BACKEND_URL}")
 
     while True:
-        # ... (query generation logic)
-
         try:
-            insert_query_log(query, op, user_id, client_ip, suspicious=(query_type == "suspicious"))
-            print(f"[{datetime.now().isoformat()}] ✅ Inserted {query_type} query log (User {user_id})")
+            # pick a random user and fake client IP
+            # (adjust range if your seeded users are fewer/more)
+            user_id = random.randint(1, 10)
+            client_ip = f"192.168.1.{random.randint(1, 254)}"
+
+            # random choice: clean vs suspicious
+            query_type = random.choice(["clean", "suspicious"])
+
+            if query_type == "clean":
+                query = random.choice(CLEAN_QUERIES)
+            else:
+                query = random.choice(SUSPICIOUS_QUERIES)
+
+            op = infer_operation_type(query)
+
+            send_log_to_backend(
+                query=query,
+                operation_type=op,
+                user_id=user_id,
+                client_ip=client_ip,
+            )
+
+            print(
+                f"[{datetime.now().isoformat()}] ✅ Generated {query_type} "
+                f"query (op={op}, user={user_id})"
+            )
+
         except Exception as e:
-            print(f"[{datetime.now().isoformat()}] ❌ Error inserting query log: {e}")
-            print("⏳ Waiting to retry connection...")
-            # 👇 REMOVE init_tables() and ensure_users_exist() here
-            time.sleep(5) # Wait longer before retrying to give DB a chance to recover
-        
+            print(f"[{datetime.now().isoformat()}] ❌ Unexpected error in generator loop: {e}")
+            print("⏳ Waiting before retry...")
+
+        # small delay so we don’t spam too hard
         time.sleep(random.uniform(3, 6))
+
 
 if __name__ == "__main__":
     run()
