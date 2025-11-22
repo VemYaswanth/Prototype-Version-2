@@ -31,10 +31,21 @@ services:
       FLASK_ENV: production
       JWT_SECRET_KEY: devsecret
       SECRET_KEY: devsecret
+
+      # 🔐 Email settings (required for MFA + reset password)
+      SMTP_HOST: smtp.hostinger.com
+      SMTP_PORT: 465
+      SMTP_USERNAME: noreply@ssems.net
+      SMTP_PASSWORD: "Voati@123"   # Not your Gmail login, use an App Password
+      SMTP_USE_TLS: "true"
+      EMAIL_FROM: noreply@ssems.net
+
+      # 🔗 Used for password reset link
+      FRONTEND_BASE_URL: "http://ssems.net:3000"
+
     ports:
       - "8000:8000"
     volumes:
-      # REQUIRED for Docker Manager tab to control containers
       - /var/run/docker.sock:/var/run/docker.sock
     command: >
       sh -c "sleep 5 && python init_db.py &&

@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 
@@ -9,17 +10,22 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
-
-// ✅ Correct import with full extension for Docker/Vite
 import DockerManagerTab from "./pages/DockerManagerTab.jsx";
-
 import NotFound from "./pages/NotFound";
+
+import MfaPage from "./pages/MfaPage";          // ✅ <-- ADD THIS
+import MfaSetupPage from "./pages/MfaSetupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
   return (
     <Routes>
-      {/* Public route */}
+      {/* Public auth routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/mfa" element={<MfaPage />} />               {/* ✅ FIX */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       {/* Protected layout */}
       <Route
@@ -41,10 +47,8 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="logs" element={<Logs />} />
-
-        {/* System Control = Docker Manager */}
         <Route path="system" element={<DockerManagerTab />} />
-
+        <Route path="mfa-setup" element={<MfaSetupPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

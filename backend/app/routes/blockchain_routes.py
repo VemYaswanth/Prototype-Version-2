@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.models import QueryLog, BlockchainLog, db
+from app.models import QueryLog, BlockchainLog
+from app import db
 from app.utils.blockchain_client import commit_log_to_blockchain, verify_log_from_blockchain
 
 blockchain_bp = Blueprint("blockchain", __name__)
